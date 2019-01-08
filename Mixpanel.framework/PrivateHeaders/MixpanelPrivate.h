@@ -8,6 +8,7 @@
 
 #import "Mixpanel.h"
 #import "MPNetwork.h"
+#import "SessionMetadata.h"
 
 #if TARGET_OS_IOS
 #import <UIKit/UIKit.h>
@@ -43,11 +44,20 @@
 #import "MPWebSocket.h"
 #endif
 
-#if !MIXPANEL_NO_NOTIFICATION_AB_TEST_SUPPORT
-@interface Mixpanel () <MPNotificationViewControllerDelegate, TrackDelegate>
-#else
-@interface Mixpanel ()
+#if !MIXPANEL_NO_CONNECT_INTEGRATION_SUPPORT
+#import "MPConnectIntegrations.h"
 #endif
+
+#if defined(MIXPANEL_NO_NOTIFICATION_AB_TEST_SUPPORT) && defined(MIXPANEL_NO_AUTOMATIC_EVENTS_SUPPORT)
+@interface Mixpanel ()
+#elif defined(MIXPANEL_NO_NOTIFICATION_AB_TEST_SUPPORT)
+@interface Mixpanel () <TrackDelegate>
+#elif defined(MIXPANEL_NO_AUTOMATIC_EVENTS_SUPPORT)
+@interface Mixpanel () <MPNotificationViewControllerDelegate>
+#else
+@interface Mixpanel () <MPNotificationViewControllerDelegate, TrackDelegate>
+#endif
+
 {
     NSUInteger _flushInterval;
     BOOL _enableVisualABTestAndCodeless;
@@ -70,6 +80,10 @@
 @property (atomic, strong) AutomaticEvents *automaticEvents;
 #endif
 
+#if !MIXPANEL_NO_CONNECT_INTEGRATION_SUPPORT
+@property (nonatomic, strong) MPConnectIntegrations *connectIntegrations;
+#endif
+
 #if !defined(MIXPANEL_WATCHOS) && !defined(MIXPANEL_MACOS)
 @property (nonatomic, assign) UIBackgroundTaskIdentifier taskId;
 @property (nonatomic, strong) UIViewController *notificationViewController;
@@ -80,6 +94,8 @@
 @property (atomic, strong) MPNetwork *network;
 @property (atomic, copy) NSString *distinctId;
 @property (atomic, copy) NSString *alias;
+@property (atomic, copy) NSString *anonymousId;
+@property (atomic, copy) NSString *userId;
 
 @property (nonatomic, copy) NSString *apiToken;
 @property (atomic, strong) NSDictionary *superProperties;
@@ -90,6 +106,7 @@
 @property (nonatomic) dispatch_queue_t serialQueue;
 @property (nonatomic) dispatch_queue_t networkQueue;
 @property (nonatomic, strong) NSMutableDictionary *timedEvents;
+@property (nonatomic, strong) SessionMetadata *sessionMetadata;
 
 @property (nonatomic) BOOL decideResponseCached;
 @property (nonatomic) BOOL hasAddedObserver;
@@ -100,6 +117,10 @@
 
 @property (nonatomic, strong) NSSet *variants;
 @property (nonatomic, strong) NSSet *eventBindings;
+
+@property (nonatomic, assign) BOOL optOutStatus;
+
+@property (nonatomic, strong) NSString *savedUrbanAirshipChannelID;
 
 @property (atomic, copy) NSString *switchboardURL;
 
@@ -119,6 +140,7 @@
 - (NSString *)eventsFilePath;
 - (NSString *)peopleFilePath;
 - (NSString *)propertiesFilePath;
+- (NSString *)optOutFilePath;
 
 #if !MIXPANEL_NO_NOTIFICATION_AB_TEST_SUPPORT
 - (void)trackPushNotification:(NSDictionary *)userInfo;
@@ -129,4 +151,3 @@
 #endif
 
 @end
-
